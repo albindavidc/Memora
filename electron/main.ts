@@ -2,11 +2,6 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import { fileURLToPath } from 'url';
-
-// Fix for __dirname in ESM context
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // --- Types (Mirrored from renderer) ---
 interface UpdateState {
@@ -73,6 +68,8 @@ function createWindow() {
   if (process.env.NODE_ENV === 'development' || process.env.BROWSER === 'none') {
     mainWindow.loadURL('http://localhost:5173');
   } else {
+    // In production, we load the bundled index.html
+    // Since main.js is in dist-electron/ and index.html is in dist/, we go up one level
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
@@ -94,13 +91,13 @@ app.whenReady().then(() => {
   // Initial update check if enabled
   if (updateSettings.autoCheck) {
     setTimeout(() => {
-      autoUpdater.checkForUpdatesAndNotify();
+      autoUpdater.checkForUpdatesAndNotify().catch(() => {});
     }, 3000);
   }
 });
 
 app.on('window-all-closed', () => {
-  if ((process as any).platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') app.quit();
 });
 
 // --- Updater Logic Helper ---
