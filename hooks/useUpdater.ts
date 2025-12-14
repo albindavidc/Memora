@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
-import { UpdateState, UpdateSettings } from '../types';
+import { useEffect, useState, useCallback } from "react";
+import { UpdateState, UpdateSettings } from "../types";
 
 export function useUpdater() {
   const [state, setState] = useState<UpdateState>({
-    status: 'idle',
-    currentVersion: '1.0.0',
+    status: "idle",
+    currentVersion: "1.0.0",
     availableVersion: null,
     releaseNotes: null,
     releaseDate: null,
@@ -12,7 +12,7 @@ export function useUpdater() {
     bytesPerSecond: 0,
     totalBytes: 0,
     downloadedBytes: 0,
-    error: null
+    error: null,
   });
 
   const [settings, setSettings] = useState<UpdateSettings>({
@@ -21,7 +21,7 @@ export function useUpdater() {
     autoInstall: false,
     checkInterval: 60,
     allowPrerelease: false,
-    allowDowngrade: false
+    allowDowngrade: false,
   });
 
   useEffect(() => {
@@ -36,28 +36,9 @@ export function useUpdater() {
 
       return () => unsubscribe();
     } else {
-      // MOCK SIMULATION for Web/Browser Preview
-      // Simulating an update available event after 5 seconds
-      console.log("Running in Web Mode: Mocking Updater");
-      
-      const timer = setTimeout(() => {
-          setState(prev => {
-              // Only trigger if we are idle, to avoid resetting user interactions
-              if(prev.status === 'idle') {
-                  return {
-                      ...prev,
-                      status: 'available',
-                      currentVersion: '1.0.0',
-                      availableVersion: '1.1.0',
-                      releaseNotes: "- Added Auto-Update feature\n- Fixed Heading shortcuts\n- Improved performance",
-                      releaseDate: new Date().toISOString()
-                  };
-              }
-              return prev;
-          });
-      }, 5000);
-
-      return () => clearTimeout(timer);
+      // WEB/BROWSER MODE: Do NOT auto-trigger update popup
+      // Updates are only shown when manually triggered from Dashboard
+      console.log("Running in Web Mode: Update checks are manual only");
     }
   }, []);
 
@@ -65,16 +46,16 @@ export function useUpdater() {
     if (window.updaterAPI) {
       return window.updaterAPI.checkForUpdates();
     } else {
-        // Mock check
-        setState(prev => ({...prev, status: 'checking'}));
-        setTimeout(() => {
-            setState(prev => ({
-                ...prev,
-                status: 'available',
-                availableVersion: '1.1.0',
-                releaseNotes: "Manual check found this update.",
-            }));
-        }, 1500);
+      // Mock check
+      setState((prev) => ({ ...prev, status: "checking" }));
+      setTimeout(() => {
+        setState((prev) => ({
+          ...prev,
+          status: "available",
+          availableVersion: "1.1.0",
+          releaseNotes: "Manual check found this update.",
+        }));
+      }, 1500);
     }
   }, []);
 
@@ -82,24 +63,28 @@ export function useUpdater() {
     if (window.updaterAPI) {
       return window.updaterAPI.downloadUpdate();
     } else {
-        // Mock download
-        setState(prev => ({...prev, status: 'downloading', downloadProgress: 0}));
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 5;
-            setState(prev => ({
-                ...prev,
-                downloadProgress: progress,
-                bytesPerSecond: 1024 * 1024, // 1MB/s
-                totalBytes: 100 * 1024 * 1024, // 100MB
-                downloadedBytes: (progress / 100) * 100 * 1024 * 1024
-            }));
-            
-            if (progress >= 100) {
-                clearInterval(interval);
-                setState(prev => ({...prev, status: 'downloaded'}));
-            }
-        }, 200);
+      // Mock download
+      setState((prev) => ({
+        ...prev,
+        status: "downloading",
+        downloadProgress: 0,
+      }));
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 5;
+        setState((prev) => ({
+          ...prev,
+          downloadProgress: progress,
+          bytesPerSecond: 1024 * 1024, // 1MB/s
+          totalBytes: 100 * 1024 * 1024, // 100MB
+          downloadedBytes: (progress / 100) * 100 * 1024 * 1024,
+        }));
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setState((prev) => ({ ...prev, status: "downloaded" }));
+        }
+      }, 200);
     }
   }, []);
 
@@ -107,9 +92,9 @@ export function useUpdater() {
     if (window.updaterAPI) {
       window.updaterAPI.installUpdate();
     } else {
-        alert("In a real app, this would restart FloatNotes!");
-        // Reset to idle for demo
-        setState(prev => ({...prev, status: 'idle'}));
+      alert("In a real app, this would restart FloatNotes!");
+      // Reset to idle for demo
+      setState((prev) => ({ ...prev, status: "idle" }));
     }
   }, []);
 
@@ -118,17 +103,20 @@ export function useUpdater() {
       window.updaterAPI.skipVersion(version);
     }
     // Dismiss mock
-    setState(prev => ({...prev, status: 'idle'}));
+    setState((prev) => ({ ...prev, status: "idle" }));
   }, []);
 
-  const updateSettings = useCallback(async (newSettings: Partial<UpdateSettings>) => {
-    if (window.updaterAPI) {
-      const updated = await window.updaterAPI.updateSettings(newSettings);
-      setSettings(updated);
-    } else {
-        setSettings(prev => ({...prev, ...newSettings}));
-    }
-  }, []);
+  const updateSettings = useCallback(
+    async (newSettings: Partial<UpdateSettings>) => {
+      if (window.updaterAPI) {
+        const updated = await window.updaterAPI.updateSettings(newSettings);
+        setSettings(updated);
+      } else {
+        setSettings((prev) => ({ ...prev, ...newSettings }));
+      }
+    },
+    []
+  );
 
   return {
     state,
@@ -137,6 +125,6 @@ export function useUpdater() {
     downloadUpdate,
     installUpdate,
     skipVersion,
-    updateSettings
+    updateSettings,
   };
 }

@@ -38,3 +38,26 @@ body, html {
   height: 14px;
   cursor: pointer;
 }
+
+/* Heading styles in editor */
+.editor-content h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.editor-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.editor-content p {
+  margin: 0.25rem 0;
+}
+
+/* Ensure bullet list items inherit proper styling */
+.editor-content ul li {
+  font-size: inherit;
+  font-weight: inherit;
+}

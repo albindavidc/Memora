@@ -48,6 +48,29 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
     }
   };
 
+  // Check if cursor is inside a list element
+  const isInsideList = () => {
+    const selection = window.getSelection();
+    if (!selection?.anchorNode) return false;
+    let node = selection.anchorNode as HTMLElement;
+    while (node && node !== editorRef.current) {
+        if (node.nodeName === 'UL' || node.nodeName === 'OL' || node.nodeName === 'LI') {
+            return true;
+        }
+        node = node.parentElement as HTMLElement;
+    }
+    return false;
+  };
+
+  // Apply heading format - exits list first if needed
+  const applyHeadingFormat = (format: string) => {
+    if (isInsideList()) {
+        // Exit list first by toggling it off
+        execCommand('insertUnorderedList');
+    }
+    execCommand('formatBlock', format);
+  };
+
   const insertImage = () => {
       const url = prompt('Enter image URL:');
       if (url) {
@@ -89,7 +112,59 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
           return;
       }
 
-      // 2. Handle Tab
+      // 2. Handle Backspace for checkbox removal
+      if (e.key === 'Backspace') {
+          const selection = window.getSelection();
+          if (!selection || selection.rangeCount === 0) return;
+
+          const range = selection.getRangeAt(0);
+          let currentBlock = range.commonAncestorContainer as HTMLElement;
+          if (currentBlock.nodeType === Node.TEXT_NODE) {
+              currentBlock = currentBlock.parentElement as HTMLElement;
+          }
+
+          // Find the parent block
+          while (currentBlock && currentBlock.parentElement !== editorRef.current && currentBlock.parentElement) {
+              currentBlock = currentBlock.parentElement;
+          }
+
+          const checkbox = currentBlock?.querySelector('input[type="checkbox"]');
+          if (checkbox) {
+              const textNode = range.startContainer;
+              const offset = range.startOffset;
+              
+              // Check if cursor is at the beginning (right after checkbox)
+              const textBeforeCursor = textNode.textContent?.substring(0, offset) || '';
+              // Only non-breaking spaces before cursor means we're right after checkbox
+              if (textBeforeCursor.replace(/\u00a0/g, '').trim() === '' && offset <= 2) {
+                  e.preventDefault();
+                  
+                  // Get remaining text content (after cursor)
+                  const remainingText = textNode.textContent?.substring(offset) || '';
+                  
+                  // Replace checkbox div with plain paragraph
+                  const newP = document.createElement('p');
+                  newP.textContent = remainingText.trim() || '';
+                  currentBlock.replaceWith(newP);
+                  
+                  // Place cursor at start of new paragraph
+                  const newRange = document.createRange();
+                  if (newP.firstChild) {
+                      newRange.setStart(newP.firstChild, 0);
+                  } else {
+                      newRange.setStart(newP, 0);
+                  }
+                  newRange.collapse(true);
+                  selection.removeAllRanges();
+                  selection.addRange(newRange);
+                  
+                  handleInput();
+                  return;
+              }
+          }
+      }
+
+      // 3. Handle Tab
       if (e.key === 'Tab') {
           e.preventDefault();
           execCommand('insertHTML', '&nbsp;&nbsp;&nbsp;&nbsp;');
@@ -154,7 +229,11 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
                           insertCheckbox();
                       }
                   } else {
-                      // For headings, ensure proper block format
+                      // For headings, exit list first if inside one
+                      if (isInsideList()) {
+                          execCommand('insertUnorderedList'); // Toggle off list
+                      }
+                      // Apply the block format
                       execCommand('formatBlock', format);
                   }
                   
@@ -268,9 +347,9 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
       {/* Minimal Toolbar */}
       {showToolbar && (
         <div className={`flex items-center gap-0.5 px-3 py-2 border-b flex-wrap transition-colors duration-200 ${isLight ? 'bg-black/5 border-slate-300' : 'bg-black/10 border-white/10'}`}>
-            <ToolbarBtn onClick={() => execCommand('formatBlock', 'H1')} icon={Heading1} title="Large Heading (# + Space)" />
-            <ToolbarBtn onClick={() => execCommand('formatBlock', 'H2')} icon={Heading2} title="Medium Heading (## + Space)" />
-            <ToolbarBtn onClick={() => execCommand('formatBlock', 'P')} icon={Pilcrow} title="Normal Text (### + Space)" />
+            <ToolbarBtn onClick={() => applyHeadingFormat('H1')} icon={Heading1} title="Large Heading (# + Space)" />
+            <ToolbarBtn onClick={() => applyHeadingFormat('H2')} icon={Heading2} title="Medium Heading (## + Space)" />
+            <ToolbarBtn onClick={() => applyHeadingFormat('P')} icon={Pilcrow} title="Normal Text (### + Space)" />
             
             <div className={`w-[1px] h-4 mx-1 ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
             

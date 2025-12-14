@@ -108,7 +108,13 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
       >
         <div className="flex items-center gap-2">
             {note.isLocked ? (
-                <Lock size={12} className={`${activeColor.isLight ? 'text-slate-400' : 'text-white/30'} ml-1`} />
+                <button
+                    onClick={() => updateNote(note.id, { isLocked: false })}
+                    className={`p-0.5 rounded hover:bg-black/10 transition-colors ${activeColor.isLight ? 'text-red-500' : 'text-red-400'}`}
+                    title="Click to unlock"
+                >
+                    <Lock size={12} />
+                </button>
             ) : (
                 <GripVertical size={14} className={activeColor.isLight ? 'text-slate-400' : 'text-white/40'} />
             )}
@@ -182,7 +188,10 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
                     
                     {/* Lock Toggle */}
                     <button 
-                        onClick={() => updateNote(note.id, { isLocked: !note.isLocked })}
+                        onClick={() => {
+                            updateNote(note.id, { isLocked: !note.isLocked });
+                            setShowSettings(false);
+                        }}
                         className={`flex items-center gap-2 text-xs transition-colors ${activeColor.isLight ? 'text-slate-700 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}
                     >
                         {note.isLocked ? <Lock size={14} className="text-red-400" /> : <Unlock size={14} />}
