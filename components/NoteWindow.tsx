@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, GripVertical, Maximize2, Palette, Star, Lock, Unlock, Keyboard, Ghost, Type } from 'lucide-react';
+import { X, GripVertical, Maximize2, Palette, Star, Lock, Unlock, Keyboard, Ghost, Type, Settings, Trash2, LayoutGrid, Pin } from 'lucide-react';
 import { Note, NOTE_COLORS } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { Editor } from './Editor';
@@ -14,6 +14,8 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
   const { updateNote, deleteNote, bringToFront } = useNoteStore();
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showOpacityControl, setShowOpacityControl] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isPinnedOnTop, setIsPinnedOnTop] = useState(true); // Default to true since window starts alwaysOnTop
 
   // Use new optimized hook
   // We only update the store (DB) when dragging ends
@@ -73,8 +75,8 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
         opacity: note.opacity ?? 1,
       }}
       className={`
-        absolute flex flex-col rounded-2xl border
-        backdrop-blur-xl shadow-2xl 
+        note-container absolute flex flex-col rounded-2xl border overflow-hidden
+        shadow-2xl 
         ${isDragging ? 'shadow-black/50 cursor-grabbing will-change-transform' : 'cursor-default transition-all duration-200 ease-out'}
         group
       `}
@@ -97,105 +99,132 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
                 type="text" 
                 value={note.title} 
                 onChange={(e) => updateNote(note.id, { title: e.target.value })}
-                placeholder="Untitled"
                 disabled={note.isLocked}
-                className={`bg-transparent border-none outline-none ${textColorClass} text-sm font-medium w-32 ${placeholderClass} no-drag ${note.isLocked ? 'cursor-not-allowed opacity-80' : ''}`}
+                className={`bg-transparent border-none outline-none ${textColorClass} text-sm font-medium w-20 min-w-0 ${placeholderClass} no-drag ${note.isLocked ? 'cursor-not-allowed opacity-80' : ''}`}
             />
         </div>
         
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 no-drag">
-           <button 
-            onClick={() => updateNote(note.id, { isPinned: !note.isPinned })}
-            className={`p-1 rounded hover:bg-black/5 transition-colors ${note.isPinned ? 'text-yellow-500' : iconColorClass}`}
-            title="Favorite"
-          >
-            <Star size={12} fill={note.isPinned ? "currentColor" : "none"} />
-          </button>
-
-          <button 
-            onClick={() => updateNote(note.id, { isLocked: !note.isLocked })}
-            className={`p-1 rounded hover:bg-black/5 transition-colors ${note.isLocked ? 'text-red-500' : iconColorClass}`}
-            title={note.isLocked ? "Unlock position" : "Lock position"}
-          >
-            {note.isLocked ? <Lock size={12} /> : <Unlock size={12} />}
-          </button>
-          
-          <button
-            onClick={() => updateNote(note.id, { showToolbar: !note.showToolbar })}
-            className={`p-1 rounded hover:bg-black/5 transition-colors ${note.showToolbar ? activeIconColorClass : iconColorClass}`}
-            title="Toggle Formatting Toolbar"
-          >
-            <Type size={12} />
-          </button>
-
-          <button
-            onClick={onOpenShortcuts}
-            className={`p-1 rounded hover:bg-black/5 transition-colors ${iconColorClass}`}
-            title="Keyboard Shortcuts"
-          >
-            <Keyboard size={12} />
-          </button>
-
-          {/* Opacity Control */}
+        {/* Always visible: Settings and Close only */}
+        <div className="flex items-center gap-0.5 no-drag">
+          {/* Settings Panel */}
           <div className="relative">
             <button
                 onClick={() => {
-                    setShowOpacityControl(!showOpacityControl);
+                    setShowSettings(!showSettings);
                     setShowColorPicker(false);
-                }}
-                className={`p-1 rounded hover:bg-black/5 transition-colors ${iconColorClass}`}
-                title="Opacity"
-            >
-                <Ghost size={12} />
-            </button>
-            {showOpacityControl && (
-                <div className="absolute top-full right-0 mt-2 p-3 bg-slate-900/95 rounded-lg border border-white/10 shadow-xl z-50 w-40 flex flex-col gap-2">
-                    <div className="flex justify-between text-[10px] text-white/50">
-                        <span>Transparent</span>
-                        <span>Opaque</span>
-                    </div>
-                    <input 
-                        type="range" 
-                        min="0.2" 
-                        max="1" 
-                        step="0.05"
-                        value={note.opacity ?? 1}
-                        onChange={(e) => updateNote(note.id, { opacity: parseFloat(e.target.value) })}
-                        className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                    />
-                     <div className="text-center text-xs text-white font-mono">
-                        {Math.round((note.opacity ?? 1) * 100)}%
-                    </div>
-                </div>
-            )}
-          </div>
-
-          {/* Color Picker */}
-          <div className="relative">
-            <button 
-                onClick={() => {
-                    setShowColorPicker(!showColorPicker);
                     setShowOpacityControl(false);
                 }}
-                className={`p-1 rounded hover:bg-black/5 transition-colors ${iconColorClass}`}
-                disabled={note.isLocked}
+                className={`p-1 rounded hover:bg-black/5 transition-colors ${showSettings ? activeIconColorClass : iconColorClass}`}
+                title="Settings"
             >
-                <Palette size={12} />
+                <Settings size={12} />
             </button>
-            {showColorPicker && (
-                <div className="absolute top-full right-0 mt-2 p-2 bg-slate-900/90 rounded-lg border border-white/10 flex gap-1 shadow-xl z-50 w-32 flex-wrap">
-                    {NOTE_COLORS.map(c => (
-                        <button
-                            key={c.id}
-                            onClick={() => {
-                                updateNote(note.id, { color: c.id });
-                                setShowColorPicker(false);
-                            }}
-                            className="w-6 h-6 rounded-full border border-white/20 hover:scale-110 transition-transform m-0.5"
-                            style={{ background: c.bg }}
-                            title={c.id}
+            {showSettings && (
+                <div 
+                    className={`absolute top-full right-0 mt-2 p-3 rounded-lg border shadow-xl z-50 w-48 flex flex-col gap-3 ${activeColor.isLight ? 'border-black/10' : 'border-white/10'}`}
+                    style={{ backgroundColor: activeColor.bg }}
+                >
+                    <h4 className={`text-xs font-semibold uppercase tracking-wide ${activeColor.isLight ? 'text-slate-600' : 'text-white/70'}`}>Note Settings</h4>
+                    
+                    {/* Pin to Favorites Toggle */}
+                    <button 
+                        onClick={() => updateNote(note.id, { isPinned: !note.isPinned })}
+                        className={`flex items-center gap-2 text-xs transition-colors ${activeColor.isLight ? 'text-slate-700 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}
+                    >
+                        <Star size={14} fill={note.isPinned ? "currentColor" : "none"} className={note.isPinned ? 'text-yellow-500' : ''} />
+                        {note.isPinned ? 'Unpin from Favorites' : 'Pin to Favorites'}
+                    </button>
+                    
+                    {/* Pin on Top Toggle */}
+                    <button 
+                        onClick={async () => {
+                            if (window.windowAPI) {
+                                const newState = await window.windowAPI.setAlwaysOnTop(!isPinnedOnTop);
+                                setIsPinnedOnTop(newState);
+                            }
+                        }}
+                        className={`flex items-center gap-2 text-xs transition-colors ${activeColor.isLight ? 'text-slate-700 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}
+                    >
+                        <Pin size={14} fill={isPinnedOnTop ? "currentColor" : "none"} className={isPinnedOnTop ? 'text-blue-500' : ''} />
+                        {isPinnedOnTop ? 'Unpin from Top' : 'Pin on Top'}
+                    </button>
+                    
+                    {/* Lock Toggle */}
+                    <button 
+                        onClick={() => updateNote(note.id, { isLocked: !note.isLocked })}
+                        className={`flex items-center gap-2 text-xs transition-colors ${activeColor.isLight ? 'text-slate-700 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}
+                    >
+                        {note.isLocked ? <Lock size={14} className="text-red-400" /> : <Unlock size={14} />}
+                        {note.isLocked ? 'Unlock Position' : 'Lock Position'}
+                    </button>
+                    
+                    {/* Toolbar Toggle */}
+                    <button 
+                        onClick={() => updateNote(note.id, { showToolbar: !note.showToolbar })}
+                        className={`flex items-center gap-2 text-xs transition-colors ${activeColor.isLight ? 'text-slate-700 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}
+                    >
+                        <Type size={14} className={note.showToolbar ? 'text-blue-400' : ''} />
+                        {note.showToolbar ? 'Hide Toolbar' : 'Show Toolbar'}
+                    </button>
+                    
+                    {/* Dashboard Toggle */}
+                    <button 
+                        onClick={() => {
+                            const { toggleDashboard } = useNoteStore.getState();
+                            toggleDashboard();
+                            setShowSettings(false);
+                        }}
+                        className={`flex items-center gap-2 text-xs transition-colors ${activeColor.isLight ? 'text-slate-700 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}
+                    >
+                        <LayoutGrid size={14} />
+                        Open Dashboard
+                    </button>
+                    
+                    <div className={`w-full h-[1px] ${activeColor.isLight ? 'bg-black/10' : 'bg-white/10'}`} />
+                    
+                    {/* Opacity */}
+                    <div className="flex flex-col gap-1">
+                        <span className={`text-[10px] ${activeColor.isLight ? 'text-slate-500' : 'text-white/50'}`}>Opacity: {Math.round((note.opacity ?? 1) * 100)}%</span>
+                        <input 
+                            type="range" 
+                            min="0.2" 
+                            max="1" 
+                            step="0.05"
+                            value={note.opacity ?? 1}
+                            onChange={(e) => updateNote(note.id, { opacity: parseFloat(e.target.value) })}
+                            className={`w-full h-1 rounded-lg appearance-none cursor-pointer accent-blue-500 ${activeColor.isLight ? 'bg-black/20' : 'bg-white/20'}`}
                         />
-                    ))}
+                    </div>
+                    
+                    {/* Colors */}
+                    <div className="flex flex-col gap-1">
+                        <span className={`text-[10px] ${activeColor.isLight ? 'text-slate-500' : 'text-white/50'}`}>Color</span>
+                        <div className="flex gap-1 flex-wrap">
+                            {NOTE_COLORS.map(c => (
+                                <button
+                                    key={c.id}
+                                    onClick={() => updateNote(note.id, { color: c.id })}
+                                    className={`w-5 h-5 rounded-full border hover:scale-110 transition-transform ${note.color === c.id ? 'border-white ring-1 ring-white/50' : 'border-white/20'}`}
+                                    style={{ background: c.bg }}
+                                    title={c.id}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    
+                    <div className={`w-full h-[1px] ${activeColor.isLight ? 'bg-black/10' : 'bg-white/10'}`} />
+                    
+                    {/* Delete */}
+                    <button 
+                        onClick={() => {
+                            deleteNote(note.id);
+                            setShowSettings(false);
+                        }}
+                        className="flex items-center gap-2 text-xs text-red-400 hover:text-red-300 transition-colors"
+                    >
+                        <Trash2 size={14} />
+                        Delete Note
+                    </button>
                 </div>
             )}
           </div>
@@ -223,13 +252,14 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
             />
         </div>
         
-        {/* Status Bar: Time (Left), Date (Center), Char Count (Right) */}
-        <div className={`h-6 shrink-0 ${activeColor.isLight ? 'bg-black/5 text-slate-500' : 'bg-black/10 text-white/30'} grid grid-cols-3 items-center px-3 text-[10px] select-none border-t ${borderColorClass}`}>
-            <span className="text-left">{timeStr}</span>
-            <span className="text-center">{dateStr}</span>
-            <span className="text-right flex items-center justify-end gap-1">
+        {/* Status Bar: Time, Date, Char Count - Single line */}
+        <div className={`h-5 shrink-0 ${activeColor.isLight ? 'bg-black/5 text-slate-500' : 'bg-black/10 text-white/30'} flex items-center justify-between px-2 text-[9px] select-none border-t ${borderColorClass}`}>
+            <span className="flex items-center gap-1">
+                {timeStr} · {dateStr}
+            </span>
+            <span className="flex items-center gap-1">
                 {note.isLocked && <Lock size={8} />}
-                {charCount} chars
+                {charCount}
             </span>
         </div>
       </div>

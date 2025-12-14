@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /* Global Styles ensuring Electron behaves like a desktop app */
-body {
+body, html {
+  background: transparent !important;
   user-select: none; /* Prevent text selection mostly */
   -webkit-user-select: none;
 }

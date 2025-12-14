@@ -182,8 +182,8 @@ export const UpdateModal: React.FC = () => {
   };
 
   return (
-    <div id="update-modal-overlay" className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[10001] animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 scale-100 animate-in zoom-in-95 duration-200 border border-white/20">
+    <div id="update-modal-overlay" className="modal-overlay fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[10001] animate-in fade-in duration-200" data-interactive>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 scale-100 animate-in zoom-in-95 duration-200 border border-white/20" data-interactive>
         {renderContent()}
       </div>
     </div>

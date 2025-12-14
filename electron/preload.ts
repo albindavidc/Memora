@@ -1,21 +1,31 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer } from "electron";
 
-contextBridge.exposeInMainWorld('updaterAPI', {
+contextBridge.exposeInMainWorld("updaterAPI", {
   // Actions
-  checkForUpdates: () => ipcRenderer.invoke('updater:check'),
-  downloadUpdate: () => ipcRenderer.invoke('updater:download'),
-  installUpdate: () => ipcRenderer.invoke('updater:install'),
-  skipVersion: (version: string) => ipcRenderer.invoke('updater:skipVersion', version),
-  
+  checkForUpdates: () => ipcRenderer.invoke("updater:check"),
+  downloadUpdate: () => ipcRenderer.invoke("updater:download"),
+  installUpdate: () => ipcRenderer.invoke("updater:install"),
+  skipVersion: (version: string) =>
+    ipcRenderer.invoke("updater:skipVersion", version),
+
   // State getters
-  getState: () => ipcRenderer.invoke('updater:getState'),
-  getSettings: () => ipcRenderer.invoke('updater:getSettings'),
-  updateSettings: (settings: any) => ipcRenderer.invoke('updater:updateSettings', settings),
-  
+  getState: () => ipcRenderer.invoke("updater:getState"),
+  getSettings: () => ipcRenderer.invoke("updater:getSettings"),
+  updateSettings: (settings: any) =>
+    ipcRenderer.invoke("updater:updateSettings", settings),
+
   // Events
   onStateChanged: (callback: (state: any) => void) => {
     const handler = (_: any, state: any) => callback(state);
-    ipcRenderer.on('updater:state-changed', handler);
-    return () => ipcRenderer.removeListener('updater:state-changed', handler);
-  }
+    ipcRenderer.on("updater:state-changed", handler);
+    return () => ipcRenderer.removeListener("updater:state-changed", handler);
+  },
+});
+
+contextBridge.exposeInMainWorld("windowAPI", {
+  setAlwaysOnTop: (value: boolean) =>
+    ipcRenderer.invoke("window:setAlwaysOnTop", value),
+  getAlwaysOnTop: () => ipcRenderer.invoke("window:getAlwaysOnTop"),
+  setIgnoreMouseEvents: (ignore: boolean, options?: { forward: boolean }) =>
+    ipcRenderer.send("window:setIgnoreMouseEvents", ignore, options),
 });

@@ -23,7 +23,7 @@ export interface Note {
   isOpen: boolean; // Is the floating window visible?
 }
 
-export type ThemeMode = 'light' | 'dark' | 'glass';
+export type ThemeMode = "light" | "dark" | "glass";
 
 export interface AppSettings {
   theme: ThemeMode;
@@ -31,24 +31,91 @@ export interface AppSettings {
 }
 
 export const NOTE_COLORS = [
-  { id: 'slate', bg: 'rgba(30, 41, 59, 0.7)', border: 'rgba(255,255,255,0.1)', isLight: false },
-  { id: 'red', bg: 'rgba(69, 10, 10, 0.7)', border: 'rgba(248, 113, 113, 0.2)', isLight: false },
-  { id: 'amber', bg: 'rgba(69, 26, 3, 0.7)', border: 'rgba(251, 191, 36, 0.2)', isLight: false },
-  { id: 'emerald', bg: 'rgba(2, 44, 34, 0.7)', border: 'rgba(52, 211, 153, 0.2)', isLight: false },
-  { id: 'blue', bg: 'rgba(23, 37, 84, 0.7)', border: 'rgba(96, 165, 250, 0.2)', isLight: false },
-  { id: 'violet', bg: 'rgba(46, 16, 101, 0.7)', border: 'rgba(167, 139, 250, 0.2)', isLight: false },
-  { id: 'pink', bg: 'rgba(80, 7, 36, 0.7)', border: 'rgba(244, 114, 182, 0.2)', isLight: false },
-  { id: 'orange', bg: 'rgba(67, 20, 7, 0.7)', border: 'rgba(251, 146, 60, 0.2)', isLight: false },
-  { id: 'teal', bg: 'rgba(19, 78, 74, 0.7)', border: 'rgba(45, 212, 191, 0.2)', isLight: false },
-  { id: 'indigo', bg: 'rgba(49, 46, 129, 0.7)', border: 'rgba(129, 140, 248, 0.2)', isLight: false },
-  // Light colors with high opacity for visibility, marked as isLight=true for dark text
-  { id: 'cool-gray', bg: '#bdbdbd', border: 'rgba(0, 0, 0, 0.1)', isLight: true },
-  { id: 'off-white', bg: 'rgba(239, 239, 239, 0.9)', border: 'rgba(0, 0, 0, 0.1)', isLight: true },
+  {
+    id: "slate",
+    bg: "#1e293b",
+    border: "rgba(255,255,255,0.1)",
+    isLight: false,
+  },
+  {
+    id: "red",
+    bg: "#450a0a",
+    border: "rgba(248, 113, 113, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "amber",
+    bg: "#451a03",
+    border: "rgba(251, 191, 36, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "emerald",
+    bg: "#022c22",
+    border: "rgba(52, 211, 153, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "blue",
+    bg: "#172554",
+    border: "rgba(96, 165, 250, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "violet",
+    bg: "#2e1065",
+    border: "rgba(167, 139, 250, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "pink",
+    bg: "#500724",
+    border: "rgba(244, 114, 182, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "orange",
+    bg: "#431407",
+    border: "rgba(251, 146, 60, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "teal",
+    bg: "#134e4a",
+    border: "rgba(45, 212, 191, 0.2)",
+    isLight: false,
+  },
+  {
+    id: "indigo",
+    bg: "#312e81",
+    border: "rgba(129, 140, 248, 0.2)",
+    isLight: false,
+  },
+  // Light colors for visibility, marked as isLight=true for dark text
+  {
+    id: "cool-gray",
+    bg: "#bdbdbd",
+    border: "rgba(0, 0, 0, 0.1)",
+    isLight: true,
+  },
+  {
+    id: "off-white",
+    bg: "#efefef",
+    border: "rgba(0, 0, 0, 0.1)",
+    isLight: true,
+  },
 ];
 
 // Updater Types
 export interface UpdateState {
-  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  status:
+    | "idle"
+    | "checking"
+    | "available"
+    | "not-available"
+    | "downloading"
+    | "downloaded"
+    | "error";
   currentVersion: string;
   availableVersion: string | null;
   releaseNotes: string | null;
@@ -76,12 +143,24 @@ export interface UpdaterAPI {
   skipVersion: (version: string) => Promise<void>;
   getState: () => Promise<UpdateState>;
   getSettings: () => Promise<UpdateSettings>;
-  updateSettings: (settings: Partial<UpdateSettings>) => Promise<UpdateSettings>;
+  updateSettings: (
+    settings: Partial<UpdateSettings>
+  ) => Promise<UpdateSettings>;
   onStateChanged: (callback: (state: UpdateState) => void) => () => void;
+}
+
+export interface WindowAPI {
+  setAlwaysOnTop: (value: boolean) => Promise<boolean>;
+  getAlwaysOnTop: () => Promise<boolean>;
+  setIgnoreMouseEvents: (
+    ignore: boolean,
+    options?: { forward: boolean }
+  ) => void;
 }
 
 declare global {
   interface Window {
     updaterAPI: UpdaterAPI;
+    windowAPI: WindowAPI;
   }
 }

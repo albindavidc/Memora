@@ -9,7 +9,7 @@ import { Plus, LayoutGrid, Keyboard } from 'lucide-react';
 const App: React.FC = () => {
   const { notes, settings, addNote, toggleDashboard, cleanupTrash } = useNoteStore();
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showDock, setShowDock] = useState(true);
+  const [showDock, setShowDock] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Timer for dock clock
@@ -66,21 +66,33 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleGlobalKeys);
   }, [showShortcuts]);
 
+  // Enable click-through for transparent areas (Electron only)
+  useEffect(() => {
+    if (!window.windowAPI?.setIgnoreMouseEvents) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if mouse is over an interactive element (note, dock, modal)
+      const isOverInteractive = target.closest('.note-container, .dock-container, .modal-overlay, [data-interactive]');
+      
+      if (isOverInteractive) {
+        // Enable mouse events when over a note or interactive element
+        window.windowAPI.setIgnoreMouseEvents(false);
+      } else {
+        // Ignore mouse events when over transparent background (click passes through)
+        window.windowAPI.setIgnoreMouseEvents(true, { forward: true });
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
   const openNotes = notes.filter(n => n.isOpen && !n.deletedAt);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden select-none">
+    <div className="relative w-screen h-screen overflow-hidden select-none bg-transparent">
       
-      {/* Background / Wallpaper - Simulating Desktop Environment */}
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none"
-        style={{
-            backgroundImage: `url('background.jpg')`,
-            opacity: 0.4
-        }}
-      />
-      <div className="absolute inset-0 bg-slate-900/60 z-0 pointer-events-none" />
-
       {/* Floating Notes Layer */}
       <div className="relative z-10 w-full h-full">
         {openNotes.map((note) => (
@@ -94,7 +106,7 @@ const App: React.FC = () => {
 
       {/* Simulated Dock / System Tray (Bottom Center) */}
       <div 
-        className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center transition-all duration-300 ${showDock ? 'translate-y-0 opacity-100' : 'translate-y-32 opacity-0'}`}
+        className={`dock-container absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center transition-all duration-300 ${showDock ? 'translate-y-0 opacity-100' : 'translate-y-32 opacity-0'}`}
       >
         {/* Date Display floating slightly above dock items */}
         <div className="mb-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/5 text-xs text-white/80 font-mono shadow-lg">

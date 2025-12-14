@@ -10,7 +10,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "compile:electron": "tsc -p electron/tsconfig.json",
-    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"npm run compile:electron -- -w\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"npm run compile:electron -- -w\" \"npx wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build && npm run compile:electron",
     "dist": "npm run electron:build && electron-builder"
   },
