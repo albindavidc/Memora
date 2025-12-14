@@ -4,13 +4,15 @@
   "version": "1.0.0",
   "description": "A professional, glassmorphism-styled floating notes application.",
   "main": "dist-electron/main.js",
+  "author": "Memora Team",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "tsc -p electron/tsconfig.json",
-    "dist": "npm run build && npm run electron:build && electron-builder"
+    "compile:electron": "tsc -p electron/tsconfig.json",
+    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"npm run compile:electron -- -w\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && npm run compile:electron",
+    "dist": "npm run electron:build && electron-builder"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
