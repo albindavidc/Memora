@@ -11,8 +11,8 @@
   ],
   "publish": {
     "provider": "github",
-    "owner": "YOUR_GITHUB_USER",
-    "repo": "memora"
+    "owner": "albindavidc",
+    "repo": "Memora"
   },
   "win": {
     "target": [
