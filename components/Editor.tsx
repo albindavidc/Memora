@@ -259,14 +259,13 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
             
             <ToolbarBtn onClick={() => execCommand('insertUnorderedList')} icon={List} title="Bullet List (Ctrl+Shift+8)" />
             <ToolbarBtn onClick={insertCheckbox} icon={CheckSquare} title="Checkbox ([] + Space)" />
-            <ToolbarBtn onClick={insertImage} icon={ImageIcon} title="Insert Image" />
         </div>
       )}
 
       {/* Content Area */}
       <div
         ref={editorRef}
-        className="editor-content flex-1 p-4 overflow-y-auto leading-relaxed outline-none"
+        className={`editor-content flex-1 p-4 overflow-y-auto leading-relaxed outline-none ${isLight ? 'text-slate-900' : 'text-white'}`}
         contentEditable
         suppressContentEditableWarning={true}
         dir="ltr"

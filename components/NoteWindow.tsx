@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { X, GripVertical, Maximize2, Palette, Star, Lock, Unlock, Keyboard, Ghost, Type, Settings, Trash2, LayoutGrid, Pin } from 'lucide-react';
 import { Note, NOTE_COLORS } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
@@ -16,6 +16,23 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
   const [showOpacityControl, setShowOpacityControl] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isPinnedOnTop, setIsPinnedOnTop] = useState(true); // Default to true since window starts alwaysOnTop
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Close settings dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setShowSettings(false);
+        setShowColorPicker(false);
+        setShowOpacityControl(false);
+      }
+    };
+
+    if (showSettings) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSettings]);
 
   // Use new optimized hook
   // We only update the store (DB) when dragging ends
@@ -104,10 +121,24 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
             />
         </div>
         
-        {/* Always visible: Settings and Close only */}
+        {/* Always visible: Pin, Settings and Close */}
         <div className="flex items-center gap-0.5 no-drag">
+          {/* Pin on Top Button */}
+          <button 
+            onClick={async () => {
+                if (window.windowAPI) {
+                    const newState = await window.windowAPI.setAlwaysOnTop(!isPinnedOnTop);
+                    setIsPinnedOnTop(newState);
+                }
+            }}
+            className={`p-1 rounded hover:bg-black/5 transition-colors ${isPinnedOnTop ? 'text-blue-500' : iconColorClass}`}
+            title={isPinnedOnTop ? "Unpin from Top" : "Pin on Top"}
+          >
+            <Pin size={12} fill={isPinnedOnTop ? "currentColor" : "none"} />
+          </button>
+
           {/* Settings Panel */}
-          <div className="relative">
+          <div className="relative" ref={settingsRef}>
             <button
                 onClick={() => {
                     setShowSettings(!showSettings);
@@ -121,7 +152,7 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
             </button>
             {showSettings && (
                 <div 
-                    className={`absolute top-full right-0 mt-2 p-3 rounded-lg border shadow-xl z-50 w-48 flex flex-col gap-3 ${activeColor.isLight ? 'border-black/10' : 'border-white/10'}`}
+                    className={`absolute top-full right-0 mt-2 p-3 rounded-lg border shadow-xl z-[9999] w-48 flex flex-col gap-3 ${activeColor.isLight ? 'border-black/10' : 'border-white/10'}`}
                     style={{ backgroundColor: activeColor.bg }}
                 >
                     <h4 className={`text-xs font-semibold uppercase tracking-wide ${activeColor.isLight ? 'text-slate-600' : 'text-white/70'}`}>Note Settings</h4>
@@ -178,6 +209,18 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
                     >
                         <LayoutGrid size={14} />
                         Open Dashboard
+                    </button>
+                    
+                    {/* Keyboard Shortcuts */}
+                    <button 
+                        onClick={() => {
+                            onOpenShortcuts();
+                            setShowSettings(false);
+                        }}
+                        className={`flex items-center gap-2 text-xs transition-colors ${activeColor.isLight ? 'text-slate-700 hover:text-slate-900' : 'text-white/80 hover:text-white'}`}
+                    >
+                        <Keyboard size={14} />
+                        Keyboard Shortcuts
                     </button>
                     
                     <div className={`w-full h-[1px] ${activeColor.isLight ? 'bg-black/10' : 'bg-white/10'}`} />
@@ -252,12 +295,11 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
             />
         </div>
         
-        {/* Status Bar: Time, Date, Char Count - Single line */}
-        <div className={`h-5 shrink-0 ${activeColor.isLight ? 'bg-black/5 text-slate-500' : 'bg-black/10 text-white/30'} flex items-center justify-between px-2 text-[9px] select-none border-t ${borderColorClass}`}>
-            <span className="flex items-center gap-1">
-                {timeStr} · {dateStr}
-            </span>
-            <span className="flex items-center gap-1">
+        {/* Status Bar: Time | Date (center) | Char Count */}
+        <div className={`h-5 shrink-0 ${activeColor.isLight ? 'bg-black/5 text-slate-500' : 'bg-black/10 text-white/30'} flex items-center px-2 text-[9px] select-none border-t ${borderColorClass}`}>
+            <span className="flex-1 text-left">{timeStr}</span>
+            <span className="flex-shrink-0 text-center">{dateStr}</span>
+            <span className="flex-1 text-right flex items-center justify-end gap-1">
                 {note.isLocked && <Lock size={8} />}
                 {charCount}
             </span>
