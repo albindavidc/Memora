@@ -3,8 +3,9 @@ import { useNoteStore } from '../stores/noteStore';
 import { NOTE_COLORS } from '../types';
 import { 
   Plus, Search, X, LayoutGrid, Clock, Star, 
-  Calendar, Palette, Inbox, Trash2, RotateCcw
+  Calendar, Palette, Inbox, Trash2, RotateCcw, Download
 } from 'lucide-react';
+import { useUpdater } from '../hooks/useUpdater';
 
 type FilterType = 'all' | 'pinned' | 'recent' | 'trash';
 
@@ -14,6 +15,7 @@ export const Dashboard: React.FC = () => {
     toggleNoteWindow, toggleDashboard, deleteNote, 
     restoreNote, permanentlyDeleteNote 
   } = useNoteStore();
+  const { state: updateState, checkForUpdates } = useUpdater();
   
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -87,8 +89,8 @@ export const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200">
-      <div className="w-full max-w-6xl h-full max-h-[85vh] glass-panel rounded-3xl flex shadow-2xl border border-white/10 overflow-hidden">
+    <div className="modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200" data-interactive>
+      <div className="w-full max-w-6xl h-full max-h-[85vh] glass-panel rounded-3xl flex shadow-2xl border border-white/10 overflow-hidden" data-interactive>
         
         {/* Sidebar */}
         <div className="w-64 bg-slate-900/50 border-r border-white/5 p-6 flex flex-col hidden md:flex">
@@ -157,7 +159,19 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-auto">
+          <div className="mt-auto space-y-4">
+             {/* Check for Updates */}
+             <button
+               onClick={() => checkForUpdates()}
+               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 hover:bg-white/5 text-slate-400 hover:text-white"
+             >
+               <Download size={18} className="text-slate-500" />
+               <span className="font-medium text-sm">Check for Updates</span>
+               {updateState.status === 'available' && (
+                 <span className="ml-auto text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">New</span>
+               )}
+             </button>
+
              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-white/5">
                 <p className="text-xs text-blue-200/80 mb-2">Pro Tip</p>
                 <p className="text-xs text-slate-400">Trash items are automatically deleted after 7 days.</p>

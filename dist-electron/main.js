@@ -21,7 +21,7 @@ let updateState = {
     error: null,
 };
 let updateSettings = {
-    autoCheck: true,
+    autoCheck: false, // Manual updates only - check from Dashboard
     autoDownload: false,
     autoInstall: false,
     checkInterval: 60,
@@ -71,7 +71,8 @@ function createWindow() {
 // --- Window IPC Handlers ---
 electron_1.ipcMain.handle("window:setAlwaysOnTop", (_, value) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.setAlwaysOnTop(value);
+        // Use "screen-saver" level. For true always on top of everything
+        mainWindow.setAlwaysOnTop(value, value ? "screen-saver" : "normal");
         return mainWindow.isAlwaysOnTop();
     }
     return false;

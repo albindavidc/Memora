@@ -152,7 +152,7 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
             </button>
             {showSettings && (
                 <div 
-                    className={`absolute top-full right-0 mt-2 p-3 rounded-lg border shadow-xl z-[9999] w-48 flex flex-col gap-3 ${activeColor.isLight ? 'border-black/10' : 'border-white/10'}`}
+                    className={`absolute top-full right-0 mt-2 p-3 rounded-lg border shadow-xl z-[99999] w-48 flex flex-col gap-3 ${activeColor.isLight ? 'border-black/10' : 'border-white/10'}`}
                     style={{ backgroundColor: activeColor.bg }}
                 >
                     <h4 className={`text-xs font-semibold uppercase tracking-wide ${activeColor.isLight ? 'text-slate-600' : 'text-white/70'}`}>Note Settings</h4>

@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNoteStore } from './stores/noteStore';
 import { NoteWindow } from './components/NoteWindow';
 import { Dashboard } from './components/Dashboard';
 import { ShortcutsHelp } from './components/ShortcutsHelp';
 import { UpdateModal } from './components/Updater/UpdateModal';
 import { Plus, LayoutGrid, Keyboard } from 'lucide-react';
+import { NOTE_COLORS } from './types';
 
 const App: React.FC = () => {
   const { notes, settings, addNote, toggleDashboard, cleanupTrash } = useNoteStore();
@@ -90,6 +91,25 @@ const App: React.FC = () => {
 
   const openNotes = notes.filter(n => n.isOpen && !n.deletedAt);
 
+  // Get the top-most note's color and opacity for dock theming
+  const dockTheme = useMemo(() => {
+    // Default to blue color when no notes are open
+    const defaultBlue = NOTE_COLORS.find(c => c.id === 'blue') || NOTE_COLORS[0];
+    if (openNotes.length === 0) {
+      return { bg: defaultBlue.bg, isLight: defaultBlue.isLight, opacity: 0.9 };
+    }
+    // Find note with highest z-index
+    const topNote = openNotes.reduce((top, note) => 
+      (note.position.zIndex || 0) > (top.position.zIndex || 0) ? note : top
+    );
+    const color = NOTE_COLORS.find(c => c.id === topNote.color) || NOTE_COLORS[0];
+    return {
+      bg: color.bg,
+      isLight: color.isLight,
+      opacity: topNote.opacity ?? 0.9,
+    };
+  }, [openNotes]);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none bg-transparent">
       
@@ -107,27 +127,38 @@ const App: React.FC = () => {
       {/* Simulated Dock / System Tray (Bottom Center) */}
       <div 
         className={`dock-container absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center transition-all duration-300 ${showDock ? 'translate-y-0 opacity-100' : 'translate-y-32 opacity-0'}`}
+        style={{ opacity: showDock ? dockTheme.opacity : 0 }}
       >
         {/* Date Display floating slightly above dock items */}
-        <div className="mb-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/5 text-xs text-white/80 font-mono shadow-lg">
+        <div 
+          className={`mb-2 px-3 py-1 backdrop-blur-md rounded-full border text-xs font-mono shadow-lg ${dockTheme.isLight ? 'border-black/10 text-slate-700' : 'border-white/5 text-white/80'}`}
+          style={{ backgroundColor: dockTheme.bg }}
+        >
             {displayDate}
         </div>
 
-        <div className="flex items-center gap-4 px-4 py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+        <div 
+          className={`flex items-center gap-4 px-4 py-3 backdrop-blur-xl border rounded-2xl shadow-2xl ${dockTheme.isLight ? 'border-black/10' : 'border-white/10'}`}
+          style={{ backgroundColor: dockTheme.bg }}
+        >
             <button 
                 onClick={() => addNote()}
-                className="group relative p-3 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all hover:scale-105 active:scale-95"
+                className={`group relative p-3 rounded-xl transition-all hover:scale-105 active:scale-95 ${dockTheme.isLight ? 'bg-black/5 hover:bg-black/10 text-slate-700' : 'bg-white/5 hover:bg-white/10 text-white'}`}
                 title="New Note"
             >
                 <Plus size={24} />
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">New Note</span>
             </button>
 
-            <div className="w-[1px] h-8 bg-white/10 mx-1" />
+            <div className={`w-[1px] h-8 mx-1 ${dockTheme.isLight ? 'bg-black/10' : 'bg-white/10'}`} />
 
             <button 
                 onClick={toggleDashboard}
-                className={`group relative p-3 rounded-xl hover:bg-white/10 transition-all hover:scale-105 active:scale-95 ${settings.showDashboard ? 'bg-white/20 text-white' : 'bg-transparent text-white/70'}`}
+                className={`group relative p-3 rounded-xl transition-all hover:scale-105 active:scale-95 ${
+                  settings.showDashboard 
+                    ? (dockTheme.isLight ? 'bg-black/20 text-slate-900' : 'bg-white/20 text-white')
+                    : (dockTheme.isLight ? 'bg-transparent text-slate-600 hover:bg-black/10' : 'bg-transparent text-white/70 hover:bg-white/10')
+                }`}
                 title="Dashboard"
             >
                 <LayoutGrid size={24} />
@@ -136,7 +167,11 @@ const App: React.FC = () => {
             
             <button 
                 onClick={() => setShowShortcuts(true)}
-                className={`group relative p-3 rounded-xl hover:bg-white/10 transition-all hover:scale-105 active:scale-95 ${showShortcuts ? 'bg-white/20 text-white' : 'bg-transparent text-white/70'}`}
+                className={`group relative p-3 rounded-xl transition-all hover:scale-105 active:scale-95 ${
+                  showShortcuts 
+                    ? (dockTheme.isLight ? 'bg-black/20 text-slate-900' : 'bg-white/20 text-white')
+                    : (dockTheme.isLight ? 'bg-transparent text-slate-600 hover:bg-black/10' : 'bg-transparent text-white/70 hover:bg-white/10')
+                }`}
                 title="Shortcuts"
             >
                 <Keyboard size={24} />
@@ -144,8 +179,8 @@ const App: React.FC = () => {
             </button>
 
             <div className="flex flex-col ml-2">
-                <span className="text-xs font-bold text-white/90">Memora</span>
-                <span className="text-[10px] text-white/50">{openNotes.length} Active Notes</span>
+                <span className={`text-xs font-bold ${dockTheme.isLight ? 'text-slate-800' : 'text-white/90'}`}>Memora</span>
+                <span className={`text-[10px] ${dockTheme.isLight ? 'text-slate-500' : 'text-white/50'}`}>{openNotes.length} Active Notes</span>
             </div>
         </div>
       </div>

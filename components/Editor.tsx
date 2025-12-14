@@ -118,21 +118,43 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
               const applyFormat = (triggerLen: number, format: string) => {
                   e.preventDefault(); // Stop the space
                   
-                  // Delete the trigger characters (e.g., "#")
-                  // If we are in a text node
+                  // Delete the trigger characters (e.g., "#", "[]")
                   if (node.nodeType === Node.TEXT_NODE) {
-                      range.setStart(node, offset - triggerLen);
+                      range.setStart(node, Math.max(0, offset - triggerLen));
                       range.setEnd(node, offset);
                       range.deleteContents();
-                  } else {
-                      // Fallback for edge cases (rare in contentEditable)
-                      editorRef.current!.innerHTML = "";
                   }
 
                   // Apply the block format
                   if (format === 'CHECKBOX') {
-                      insertCheckbox();
+                      // Ensure we're on a new line for checkbox
+                      const currentNode = range.commonAncestorContainer;
+                      const parentBlock = currentNode.nodeType === Node.TEXT_NODE 
+                          ? currentNode.parentElement 
+                          : currentNode as HTMLElement;
+                      
+                      // If inserting at the start of an empty block or the block only had the trigger
+                      const blockText = parentBlock?.textContent?.trim() || '';
+                      if (blockText === '' && parentBlock && parentBlock !== editorRef.current) {
+                          // Replace the empty block with checkbox div
+                          const newDiv = document.createElement('div');
+                          newDiv.innerHTML = '<input type="checkbox" style="margin-right: 8px; vertical-align: middle;">&nbsp;';
+                          parentBlock.replaceWith(newDiv);
+                          
+                          // Position cursor after checkbox
+                          const newRange = document.createRange();
+                          const lastChild = newDiv.lastChild;
+                          if (lastChild) {
+                              newRange.setStart(lastChild, lastChild.textContent?.length || 0);
+                              newRange.collapse(true);
+                              window.getSelection()?.removeAllRanges();
+                              window.getSelection()?.addRange(newRange);
+                          }
+                      } else {
+                          insertCheckbox();
+                      }
                   } else {
+                      // For headings, ensure proper block format
                       execCommand('formatBlock', format);
                   }
                   
