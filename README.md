@@ -1,4 +1,4 @@
-# 🧠 Memora
+# 🧠 Memora (Floating desktop application)
 
 **Memora** is a modern, lightweight note-taking application focused on **speed, clarity, and productivity**.
 It provides powerful formatting, smart editing features, and intuitive note management — without getting in your way.
