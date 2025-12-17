@@ -6,6 +6,7 @@ import {
   Calendar, Palette, Inbox, Trash2, RotateCcw, Download
 } from 'lucide-react';
 import { useUpdater } from '../hooks/useUpdater';
+import icon from '../assets/icon.png';
 
 type FilterType = 'all' | 'pinned' | 'recent' | 'trash';
 
@@ -89,15 +90,13 @@ export const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-200" data-interactive>
+    <div className="modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-slate-950/90 animate-in fade-in duration-200" data-interactive>
       <div className="w-full max-w-6xl h-full max-h-[85vh] glass-panel rounded-3xl flex shadow-2xl border border-white/10 overflow-hidden" data-interactive>
         
         {/* Sidebar */}
         <div className="w-64 bg-slate-900/50 border-r border-white/5 p-6 flex flex-col hidden md:flex">
           <div className="flex items-center gap-3 mb-8 px-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-blue-900/50">
-              M
-            </div>
+            <img src={icon} alt="Memora" className="w-8 h-8 rounded-lg shadow-lg" />
             <span className="text-xl font-bold text-white tracking-tight">Memora</span>
           </div>
 

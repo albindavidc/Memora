@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { 
-  Bold, Italic, List, 
+  Bold, Italic, List, ListOrdered, Minus,
   Heading1, Heading2, Pilcrow, // Icons for headings/normal text
   Image as ImageIcon, CheckSquare 
 } from 'lucide-react';
@@ -84,6 +84,10 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
       execCommand('insertHTML', checkboxHtml);
   };
 
+  const insertHorizontalRule = () => {
+      execCommand('insertHorizontalRule');
+  };
+
   // Handle click on checkboxes to toggle them
   const handleEditorClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).tagName === 'INPUT' && (e.target as HTMLInputElement).type === 'checkbox') {
@@ -112,54 +116,84 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
           return;
       }
 
+      // Ordered List (Ctrl + Shift + 7)
+      if (e.ctrlKey && e.shiftKey && e.key === '&') {
+          e.preventDefault();
+          execCommand('insertOrderedList');
+          return;
+      }
+
       // 2. Handle Backspace for checkbox removal
       if (e.key === 'Backspace') {
           const selection = window.getSelection();
           if (!selection || selection.rangeCount === 0) return;
 
           const range = selection.getRangeAt(0);
-          let currentBlock = range.commonAncestorContainer as HTMLElement;
-          if (currentBlock.nodeType === Node.TEXT_NODE) {
-              currentBlock = currentBlock.parentElement as HTMLElement;
+          let currentNode = range.commonAncestorContainer as HTMLElement;
+          if (currentNode.nodeType === Node.TEXT_NODE) {
+              currentNode = currentNode.parentElement as HTMLElement;
           }
 
-          // Find the parent block
-          while (currentBlock && currentBlock.parentElement !== editorRef.current && currentBlock.parentElement) {
-              currentBlock = currentBlock.parentElement;
+          // Find the closest element containing a checkbox
+          let checkboxContainer: HTMLElement | null = null;
+          let tempNode: HTMLElement | null = currentNode;
+          
+          while (tempNode && tempNode !== editorRef.current) {
+              const checkbox = tempNode.querySelector('input[type="checkbox"]');
+              if (checkbox && tempNode.contains(range.startContainer)) {
+                  checkboxContainer = tempNode;
+                  break;
+              }
+              tempNode = tempNode.parentElement;
           }
 
-          const checkbox = currentBlock?.querySelector('input[type="checkbox"]');
-          if (checkbox) {
-              const textNode = range.startContainer;
-              const offset = range.startOffset;
-              
-              // Check if cursor is at the beginning (right after checkbox)
-              const textBeforeCursor = textNode.textContent?.substring(0, offset) || '';
-              // Only non-breaking spaces before cursor means we're right after checkbox
-              if (textBeforeCursor.replace(/\u00a0/g, '').trim() === '' && offset <= 2) {
-                  e.preventDefault();
+          if (checkboxContainer) {
+              const checkbox = checkboxContainer.querySelector('input[type="checkbox"]');
+              if (checkbox) {
+                  const textNode = range.startContainer;
+                  const offset = range.startOffset;
                   
-                  // Get remaining text content (after cursor)
-                  const remainingText = textNode.textContent?.substring(offset) || '';
-                  
-                  // Replace checkbox div with plain paragraph
-                  const newP = document.createElement('p');
-                  newP.textContent = remainingText.trim() || '';
-                  currentBlock.replaceWith(newP);
-                  
-                  // Place cursor at start of new paragraph
-                  const newRange = document.createRange();
-                  if (newP.firstChild) {
-                      newRange.setStart(newP.firstChild, 0);
-                  } else {
-                      newRange.setStart(newP, 0);
+                  // Check if cursor is at the beginning (right after checkbox)
+                  const textBeforeCursor = textNode.textContent?.substring(0, offset) || '';
+                  // Only non-breaking spaces before cursor means we're right after checkbox
+                  if (textBeforeCursor.replace(/\u00a0/g, '').trim() === '' && offset <= 2) {
+                      e.preventDefault();
+                      
+                      // Check if checkbox is inside a list item
+                      const listItem = checkboxContainer.closest('li');
+                      
+                      if (listItem) {
+                          // Just remove the checkbox, keep the list item
+                          checkbox.remove();
+                          // Remove any nbsp after checkbox
+                          const firstText = listItem.firstChild;
+                          if (firstText && firstText.nodeType === Node.TEXT_NODE) {
+                              firstText.textContent = firstText.textContent?.replace(/^\u00a0+/, '') || '';
+                          }
+                      } else {
+                          // Get remaining text content (after cursor)
+                          const remainingText = textNode.textContent?.substring(offset) || '';
+                          
+                          // Replace checkbox container with plain paragraph
+                          const newP = document.createElement('p');
+                          newP.textContent = remainingText.trim() || '';
+                          checkboxContainer.replaceWith(newP);
+                          
+                          // Place cursor at start of new paragraph
+                          const newRange = document.createRange();
+                          if (newP.firstChild) {
+                              newRange.setStart(newP.firstChild, 0);
+                          } else {
+                              newRange.setStart(newP, 0);
+                          }
+                          newRange.collapse(true);
+                          selection.removeAllRanges();
+                          selection.addRange(newRange);
+                      }
+                      
+                      handleInput();
+                      return;
                   }
-                  newRange.collapse(true);
-                  selection.removeAllRanges();
-                  selection.addRange(newRange);
-                  
-                  handleInput();
-                  return;
               }
           }
       }
@@ -272,6 +306,78 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
                   applyFormat(2, 'CHECKBOX');
                   return;
               }
+
+              // Horizontal Rule: --- + Space
+              if (textBeforeCaret.endsWith('---')) {
+                  if (textBeforeCaret.trim() === '---') {
+                      e.preventDefault();
+                      // Delete the trigger characters
+                      if (node.nodeType === Node.TEXT_NODE) {
+                          range.setStart(node, Math.max(0, offset - 3));
+                          range.setEnd(node, offset);
+                          range.deleteContents();
+                      }
+                      insertHorizontalRule();
+                      handleInput();
+                      return;
+                  }
+              }
+
+              // Ordered List: 1. + Space (or any number followed by dot)
+              const orderedListMatch = textBeforeCaret.match(/^(\d+)\.\s*$/);
+              if (orderedListMatch) {
+                  e.preventDefault();
+                  const startNumber = parseInt(orderedListMatch[1], 10);
+                  // Delete the trigger characters (number + dot)
+                  const triggerLength = orderedListMatch[0].length;
+                  if (node.nodeType === Node.TEXT_NODE) {
+                      range.setStart(node, Math.max(0, offset - triggerLength));
+                      range.setEnd(node, offset);
+                      range.deleteContents();
+                  }
+                  execCommand('insertOrderedList');
+                  
+                  // Set the start attribute on the ordered list to begin from the entered number
+                  if (startNumber !== 1) {
+                      // Find the newly created ol element
+                      setTimeout(() => {
+                          const selection = window.getSelection();
+                          if (selection && selection.rangeCount > 0) {
+                              let currentNode: Node | null = selection.getRangeAt(0).commonAncestorContainer;
+                              // Walk up to find the ol element
+                              while (currentNode && currentNode !== editorRef.current) {
+                                  if (currentNode.nodeName === 'OL') {
+                                      (currentNode as HTMLOListElement).start = startNumber;
+                                      break;
+                                  }
+                                  if (currentNode.parentNode?.nodeName === 'OL') {
+                                      (currentNode.parentNode as HTMLOListElement).start = startNumber;
+                                      break;
+                                  }
+                                  currentNode = currentNode.parentNode;
+                              }
+                          }
+                          handleInput();
+                      }, 0);
+                  } else {
+                      handleInput();
+                  }
+                  return;
+              }
+
+              // Bullet List: - + Space or * + Space
+              if (textBeforeCaret.trim() === '-' || textBeforeCaret.trim() === '*') {
+                  e.preventDefault();
+                  // Delete the trigger character
+                  if (node.nodeType === Node.TEXT_NODE) {
+                      range.setStart(node, Math.max(0, offset - 1));
+                      range.setEnd(node, offset);
+                      range.deleteContents();
+                  }
+                  execCommand('insertUnorderedList');
+                  handleInput();
+                  return;
+              }
           }
       }
 
@@ -358,8 +464,10 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
             
             <div className={`w-[1px] h-4 mx-1 ${isLight ? 'bg-slate-300' : 'bg-white/10'}`} />
             
-            <ToolbarBtn onClick={() => execCommand('insertUnorderedList')} icon={List} title="Bullet List (Ctrl+Shift+8)" />
+            <ToolbarBtn onClick={() => execCommand('insertUnorderedList')} icon={List} title="Bullet List (- + Space)" />
+            <ToolbarBtn onClick={() => execCommand('insertOrderedList')} icon={ListOrdered} title="Ordered List (1. + Space)" />
             <ToolbarBtn onClick={insertCheckbox} icon={CheckSquare} title="Checkbox ([] + Space)" />
+            <ToolbarBtn onClick={insertHorizontalRule} icon={Minus} title="Horizontal Line (--- + Space)" />
         </div>
       )}
 
@@ -369,6 +477,7 @@ export const Editor: React.FC<EditorProps> = ({ content, onChange, showToolbar =
         className={`editor-content flex-1 p-4 overflow-y-auto leading-relaxed outline-none ${isLight ? 'text-slate-900' : 'text-white'}`}
         contentEditable
         suppressContentEditableWarning={true}
+        spellCheck={true}
         dir="ltr"
         onClick={handleEditorClick}
         onInput={handleInput}

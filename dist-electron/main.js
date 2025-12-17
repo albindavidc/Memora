@@ -33,6 +33,64 @@ electron_updater_1.autoUpdater.logger = electron_log_1.default;
 electron_updater_1.autoUpdater.logger.transports.file.level = "info";
 electron_updater_1.autoUpdater.autoDownload = false; // We handle this manually via UI
 electron_updater_1.autoUpdater.autoInstallOnAppQuit = false;
+// --- Native Context Menu Setup ---
+function setupContextMenu(window) {
+    window.webContents.on("context-menu", (event, params) => {
+        const menuTemplate = [];
+        // Text editing options
+        if (params.isEditable) {
+            if (params.misspelledWord) {
+                // Add spelling suggestions
+                for (const suggestion of params.dictionarySuggestions.slice(0, 5)) {
+                    menuTemplate.push({
+                        label: suggestion,
+                        click: () => window.webContents.replaceMisspelling(suggestion),
+                    });
+                }
+                if (params.dictionarySuggestions.length > 0) {
+                    menuTemplate.push({ type: "separator" });
+                }
+            }
+            menuTemplate.push({ label: "Undo", role: "undo", enabled: params.editFlags.canUndo }, { label: "Redo", role: "redo", enabled: params.editFlags.canRedo }, { type: "separator" }, { label: "Cut", role: "cut", enabled: params.editFlags.canCut }, { label: "Copy", role: "copy", enabled: params.editFlags.canCopy }, { label: "Paste", role: "paste", enabled: params.editFlags.canPaste }, {
+                label: "Select All",
+                role: "selectAll",
+                enabled: params.editFlags.canSelectAll,
+            });
+        }
+        else if (params.selectionText) {
+            // Text selection (non-editable)
+            menuTemplate.push({ label: "Copy", role: "copy" });
+        }
+        // Link options
+        if (params.linkURL) {
+            if (menuTemplate.length > 0) {
+                menuTemplate.push({ type: "separator" });
+            }
+            menuTemplate.push({
+                label: "Open Link in Browser",
+                click: () => electron_1.shell.openExternal(params.linkURL),
+            }, {
+                label: "Copy Link Address",
+                click: () => electron_1.clipboard.writeText(params.linkURL),
+            });
+        }
+        // Image options
+        if (params.hasImageContents && params.srcURL) {
+            if (menuTemplate.length > 0) {
+                menuTemplate.push({ type: "separator" });
+            }
+            menuTemplate.push({
+                label: "Copy Image",
+                click: () => window.webContents.copyImageAt(params.x, params.y),
+            });
+        }
+        // Show menu only if there are items
+        if (menuTemplate.length > 0) {
+            const menu = electron_1.Menu.buildFromTemplate(menuTemplate);
+            menu.popup({ window });
+        }
+    });
+}
 // --- Window Management ---
 let mainWindow = null;
 function createWindow() {
@@ -42,12 +100,18 @@ function createWindow() {
         frame: false, // Frameless for custom UI
         transparent: true, // Glass effect support
         backgroundColor: "#00000000", // Transparent bg
-        hasShadow: true,
-        alwaysOnTop: true, // Float above all windows
+        hasShadow: false, // Disable shadow to reduce compositor conflicts
+        alwaysOnTop: false, // Default to not floating above other windows
+        skipTaskbar: false, // Keep in taskbar
+        icon: path_1.default.join(__dirname, "../assets/icon.png"), // App icon
+        // Improve performance with hardware-accelerated content in other apps
+        paintWhenInitiallyHidden: true,
         webPreferences: {
             preload: path_1.default.join(__dirname, "preload.js"),
             nodeIntegration: false,
             contextIsolation: true,
+            // These can help with compositor issues
+            backgroundThrottling: false,
         },
     });
     // Maximize window on startup
@@ -67,6 +131,8 @@ function createWindow() {
         electron_1.shell.openExternal(url);
         return { action: "deny" };
     });
+    // Setup native context menu
+    setupContextMenu(mainWindow);
 }
 // --- Window IPC Handlers ---
 electron_1.ipcMain.handle("window:setAlwaysOnTop", (_, value) => {
@@ -97,6 +163,13 @@ electron_1.app.whenReady().then(() => {
         electron_1.app.setLoginItemSettings({
             openAtLogin: true,
             path: electron_1.app.getPath("exe"),
+        });
+    }
+    // Ensure app quits when window is closed
+    if (mainWindow) {
+        mainWindow.on("closed", () => {
+            mainWindow = null;
+            electron_1.app.quit();
         });
     }
     electron_1.app.on("activate", () => {

@@ -5,23 +5,45 @@ import { UpdateProgress } from './UpdateProgress';
 export const UpdateModal: React.FC = () => {
   const { state, downloadUpdate, installUpdate, skipVersion, checkForUpdates } = useUpdater();
   
-  // Close the modal if state is idle or checking (unless explicit check triggered, but for auto-popup we want available/error)
-  const isOpen = ['available', 'downloading', 'downloaded', 'error'].includes(state.status);
+  // Close the modal if state is idle or checking
+  const isOpen = ['available', 'downloading', 'downloaded', 'error', 'not-available'].includes(state.status);
 
   // Helper to close (reset state to idle for UI purposes)
   const onClose = () => {
-      // In a real app we might invoke a 'dismiss' IPC event.
-      // For now we rely on the parent or logic. 
-      // Since useUpdater logic is managing this, we might need an action to 'dismiss' the alert manually
-      // But typically state comes from backend. We'll use a local override or just not render if we could.
-      // For this implementation, we will assume 'Later' just hides it.
-      // Since we can't easily change backend state from here without an IPC 'reset', we'll hide via DOM if we had a local state,
-      // but `isOpen` is derived from global state.
-      // We will assume 'skipVersion' or 'Later' (which does nothing usually) is handled.
-      // For the demo, let's force a reload or just let it be.
-      // Actually, let's just make the modal internal visible state controllable.
       const modal = document.getElementById('update-modal-overlay');
       if (modal) modal.style.display = 'none';
+  };
+
+  // Parse error message to show user-friendly text
+  const getUserFriendlyError = (error: string | null): { title: string; message: string; isNotFound: boolean } => {
+    if (!error) {
+      return { title: "Update Check Failed", message: "An unknown error occurred.", isNotFound: false };
+    }
+    
+    // Check for 404 / not found errors (no releases published yet)
+    if (error.includes('404') || error.includes('HttpError: 404') || error.includes('Cannot find latest.yml') || error.includes('not found')) {
+      return { 
+        title: "You're Up to Date!", 
+        message: "No updates are available at this time. You're running the latest version.",
+        isNotFound: true
+      };
+    }
+    
+    // Check for network errors
+    if (error.includes('ENOTFOUND') || error.includes('ETIMEDOUT') || error.includes('network')) {
+      return { 
+        title: "Connection Error", 
+        message: "Could not connect to the update server. Please check your internet connection and try again.",
+        isNotFound: false
+      };
+    }
+    
+    // Generic error
+    return { 
+      title: "Update Check Failed", 
+      message: "Something went wrong while checking for updates. Please try again later.",
+      isNotFound: false
+    };
   };
 
   if (!isOpen) return null;
@@ -140,7 +162,78 @@ export const UpdateModal: React.FC = () => {
           </div>
         );
 
+      case 'not-available':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg text-slate-900">You're Up to Date!</h3>
+                <p className="text-gray-500">
+                  Version {state.currentVersion} is the latest version.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+              <p className="text-sm text-blue-700">
+                ✨ You're running the latest version of Memora. Check back later for new features and improvements!
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={onClose}
+                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        );
+
       case 'error':
+        const errorInfo = getUserFriendlyError(state.error);
+        
+        // If error is actually "no updates found" (404), show friendly UI
+        if (errorInfo.isNotFound) {
+          return (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg text-slate-900">{errorInfo.title}</h3>
+                  <p className="text-gray-500">Version {state.currentVersion}</p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <p className="text-sm text-blue-700">
+                  ✨ {errorInfo.message}
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={onClose}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                >
+                  Got it!
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // Show actual error for other cases
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -150,13 +243,13 @@ export const UpdateModal: React.FC = () => {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-lg text-slate-900">Update Failed</h3>
-                <p className="text-gray-500">Something went wrong</p>
+                <h3 className="font-semibold text-lg text-slate-900">{errorInfo.title}</h3>
+                <p className="text-gray-500">Please try again</p>
               </div>
             </div>
 
             <div className="bg-red-50 p-3 rounded-lg border border-red-100">
-              <p className="text-sm text-red-700 font-mono break-all">{state.error || "Unknown error"}</p>
+              <p className="text-sm text-red-700">{errorInfo.message}</p>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -182,7 +275,7 @@ export const UpdateModal: React.FC = () => {
   };
 
   return (
-    <div id="update-modal-overlay" className="modal-overlay fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[10001] animate-in fade-in duration-200" data-interactive>
+    <div id="update-modal-overlay" className="modal-overlay fixed inset-0 bg-black/70 flex items-center justify-center z-[10001] animate-in fade-in duration-200" data-interactive>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 scale-100 animate-in zoom-in-95 duration-200 border border-white/20" data-interactive>
         {renderContent()}
       </div>

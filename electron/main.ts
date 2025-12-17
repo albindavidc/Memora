@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, shell, Menu, clipboard } from "electron";
 import path from "path";
 import { autoUpdater } from "electron-updater";
 import log from "electron-log";
@@ -53,6 +53,80 @@ autoUpdater.logger = log;
 autoUpdater.autoDownload = false; // We handle this manually via UI
 autoUpdater.autoInstallOnAppQuit = false;
 
+// --- Native Context Menu Setup ---
+function setupContextMenu(window: BrowserWindow) {
+  window.webContents.on("context-menu", (event, params) => {
+    const menuTemplate: Electron.MenuItemConstructorOptions[] = [];
+
+    // Text editing options
+    if (params.isEditable) {
+      if (params.misspelledWord) {
+        // Add spelling suggestions
+        for (const suggestion of params.dictionarySuggestions.slice(0, 5)) {
+          menuTemplate.push({
+            label: suggestion,
+            click: () => window.webContents.replaceMisspelling(suggestion),
+          });
+        }
+        if (params.dictionarySuggestions.length > 0) {
+          menuTemplate.push({ type: "separator" });
+        }
+      }
+
+      menuTemplate.push(
+        { label: "Undo", role: "undo", enabled: params.editFlags.canUndo },
+        { label: "Redo", role: "redo", enabled: params.editFlags.canRedo },
+        { type: "separator" },
+        { label: "Cut", role: "cut", enabled: params.editFlags.canCut },
+        { label: "Copy", role: "copy", enabled: params.editFlags.canCopy },
+        { label: "Paste", role: "paste", enabled: params.editFlags.canPaste },
+        {
+          label: "Select All",
+          role: "selectAll",
+          enabled: params.editFlags.canSelectAll,
+        }
+      );
+    } else if (params.selectionText) {
+      // Text selection (non-editable)
+      menuTemplate.push({ label: "Copy", role: "copy" });
+    }
+
+    // Link options
+    if (params.linkURL) {
+      if (menuTemplate.length > 0) {
+        menuTemplate.push({ type: "separator" });
+      }
+      menuTemplate.push(
+        {
+          label: "Open Link in Browser",
+          click: () => shell.openExternal(params.linkURL),
+        },
+        {
+          label: "Copy Link Address",
+          click: () => clipboard.writeText(params.linkURL),
+        }
+      );
+    }
+
+    // Image options
+    if (params.hasImageContents && params.srcURL) {
+      if (menuTemplate.length > 0) {
+        menuTemplate.push({ type: "separator" });
+      }
+      menuTemplate.push({
+        label: "Copy Image",
+        click: () => window.webContents.copyImageAt(params.x, params.y),
+      });
+    }
+
+    // Show menu only if there are items
+    if (menuTemplate.length > 0) {
+      const menu = Menu.buildFromTemplate(menuTemplate);
+      menu.popup({ window });
+    }
+  });
+}
+
 // --- Window Management ---
 let mainWindow: BrowserWindow | null = null;
 
@@ -63,12 +137,18 @@ function createWindow() {
     frame: false, // Frameless for custom UI
     transparent: true, // Glass effect support
     backgroundColor: "#00000000", // Transparent bg
-    hasShadow: true,
-    alwaysOnTop: true, // Float above all windows
+    hasShadow: false, // Disable shadow to reduce compositor conflicts
+    alwaysOnTop: false, // Default to not floating above other windows
+    skipTaskbar: false, // Keep in taskbar
+    icon: path.join(__dirname, "../assets/icon.png"), // App icon
+    // Improve performance with hardware-accelerated content in other apps
+    paintWhenInitiallyHidden: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
+      // These can help with compositor issues
+      backgroundThrottling: false,
     },
   });
 
@@ -92,6 +172,9 @@ function createWindow() {
     shell.openExternal(url);
     return { action: "deny" };
   });
+
+  // Setup native context menu
+  setupContextMenu(mainWindow);
 }
 
 // --- Window IPC Handlers ---
@@ -130,6 +213,14 @@ app.whenReady().then(() => {
     app.setLoginItemSettings({
       openAtLogin: true,
       path: app.getPath("exe"),
+    });
+  }
+
+  // Ensure app quits when window is closed
+  if (mainWindow) {
+    mainWindow.on("closed", () => {
+      mainWindow = null;
+      app.quit();
     });
   }
 

@@ -15,7 +15,7 @@ export const NoteWindow: React.FC<NoteWindowProps> = ({ note, onOpenShortcuts })
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showOpacityControl, setShowOpacityControl] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [isPinnedOnTop, setIsPinnedOnTop] = useState(true); // Default to true since window starts alwaysOnTop
+  const [isPinnedOnTop, setIsPinnedOnTop] = useState(false); // Default to false - notes unpinned by default
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // Close settings dropdown when clicking outside

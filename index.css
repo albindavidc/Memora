@@ -61,3 +61,28 @@ body, html {
   font-size: inherit;
   font-weight: inherit;
 }
+
+/* Ordered list styling */
+.editor-content ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.editor-content ol li::marker {
+  color: currentColor;
+}
+
+.editor-content ol li {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* Horizontal rule styling */
+.editor-content hr {
+  border: none;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.3;
+  margin: 1rem 0;
+}

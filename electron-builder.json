@@ -21,13 +21,20 @@
         "arch": ["x64"]
       }
     ],
-    "artifactName": "${productName}-Setup-${version}.${ext}"
+    "icon": "assets/icon.ico",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "verifyUpdateCodeSignature": false,
+    "certificateFile": "cert.pfx",
+    "certificatePassword": "Memora123"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Memora"
+    "shortcutName": "Memora",
+    "installerIcon": "assets/icon.ico",
+    "uninstallerIcon": "assets/icon.ico",
+    "installerHeaderIcon": "assets/icon.ico"
   }
 }

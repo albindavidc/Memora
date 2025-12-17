@@ -9,16 +9,22 @@ export const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ onClose }) => {
   const shortcuts = [
     { key: "Global", items: [
       { keys: ["Ctrl", "\\"], desc: "Toggle Dock Visibility" },
-      { keys: ["Ctrl", "Shift", "F"], desc: "Open Dashboard" },
+      { keys: ["Ctrl", "Space"], desc: "Pin / Unpin Window (Always on Top)" },
+      { keys: ["Esc"], desc: "Close Note / Dashboard / Modal" },
     ]},
     { key: "Editor Formatting", items: [
-      { keys: ["[]", "Space"], desc: "Insert Checkbox" },
-      { keys: ["Enter"], desc: "New Checkbox / Exit List" },
-      { keys: ["Ctrl", "Shift", "8"], desc: "Bullet List" },
       { keys: ["Ctrl", "B"], desc: "Bold" },
       { keys: ["Ctrl", "I"], desc: "Italic" },
+      { keys: ["-", "Space"], desc: "Bullet List" },
+      { keys: ["1.", "Space"], desc: "Ordered List (Numbers)" },
+      { keys: ["[]", "Space"], desc: "Insert Checkbox" },
+      { keys: ["---", "Space"], desc: "Insert Horizontal Line" },
+      { keys: ["Tab"], desc: "Insert Tab Space" },
     ]},
     { key: "Headings", items: [
+      { keys: ["#", "Space"], desc: "Large Heading (H1)" },
+      { keys: ["##", "Space"], desc: "Medium Heading (H2)" },
+      { keys: ["###", "Space"], desc: "Normal Text" },
       { keys: ["Ctrl", "Alt", "1"], desc: "Large Heading (H1)" },
       { keys: ["Ctrl", "Alt", "2"], desc: "Medium Heading (H2)" },
       { keys: ["Ctrl", "Alt", "0"], desc: "Normal Text" },
@@ -26,7 +32,7 @@ export const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className="modal-overlay fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200" data-interactive>
+    <div className="modal-overlay fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/80 animate-in fade-in duration-200" data-interactive>
       <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col" data-interactive>
         
         {/* Header */}

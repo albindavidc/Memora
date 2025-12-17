@@ -39,6 +39,8 @@ const App: React.FC = () => {
   const year = currentTime.getFullYear();
   const displayDate = `${dayName} - ${day}/${month}/${year}`;
 
+  // Filter open notes (used for multiple features)
+  const openNotes = notes.filter(n => n.isOpen && !n.deletedAt);
 
   // Create an initial note if none exist
   useEffect(() => {
@@ -60,36 +62,85 @@ const App: React.FC = () => {
         // Close Shortcuts: Esc
         if (e.key === 'Escape' && showShortcuts) {
             setShowShortcuts(false);
+            return;
+        }
+
+        // Close Dashboard: Esc
+        if (e.key === 'Escape' && settings.showDashboard) {
+            toggleDashboard();
+            return;
+        }
+
+        // Close top-most note: Esc (when no modals are open)
+        if (e.key === 'Escape' && !showShortcuts && !settings.showDashboard && openNotes.length > 0) {
+            // Find the note with the highest z-index
+            const topNote = openNotes.reduce((top, note) => 
+              (note.position.zIndex || 0) > (top.position.zIndex || 0) ? note : top
+            , openNotes[0]);
+            
+            if (topNote) {
+                const { updateNote } = useNoteStore.getState();
+                updateNote(topNote.id, { isOpen: false });
+            }
+        }
+
+        // Toggle Pin on Top: Ctrl + Space
+        if (e.ctrlKey && e.key === ' ') {
+            e.preventDefault();
+            if (window.windowAPI) {
+                window.windowAPI.getAlwaysOnTop().then((currentState: boolean) => {
+                    window.windowAPI.setAlwaysOnTop(!currentState);
+                });
+            }
         }
     };
 
     window.addEventListener('keydown', handleGlobalKeys);
     return () => window.removeEventListener('keydown', handleGlobalKeys);
-  }, [showShortcuts]);
+  }, [showShortcuts, settings.showDashboard, openNotes, toggleDashboard]);
 
   // Enable click-through for transparent areas (Electron only)
+  // Note: Frequent calls to setIgnoreMouseEvents can cause issues with hardware-accelerated content
   useEffect(() => {
     if (!window.windowAPI?.setIgnoreMouseEvents) return;
+
+    let lastIgnoreState: boolean | null = null;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const handleMouseMove = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       // Check if mouse is over an interactive element (note, dock, modal)
       const isOverInteractive = target.closest('.note-container, .dock-container, .modal-overlay, [data-interactive]');
       
-      if (isOverInteractive) {
-        // Enable mouse events when over a note or interactive element
-        window.windowAPI.setIgnoreMouseEvents(false);
-      } else {
-        // Ignore mouse events when over transparent background (click passes through)
-        window.windowAPI.setIgnoreMouseEvents(true, { forward: true });
+      const shouldIgnore = !isOverInteractive;
+      
+      // Only update if state actually changed
+      if (shouldIgnore !== lastIgnoreState) {
+        // Clear any pending debounce
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+        
+        // Use a small delay to prevent rapid toggling which causes GPU compositor issues
+        debounceTimer = setTimeout(() => {
+          lastIgnoreState = shouldIgnore;
+          if (shouldIgnore) {
+            // Ignore mouse events when over transparent background (click passes through)
+            window.windowAPI.setIgnoreMouseEvents(true, { forward: true });
+          } else {
+            // Enable mouse events when over a note or interactive element
+            window.windowAPI.setIgnoreMouseEvents(false);
+          }
+        }, 50); // 50ms debounce to stabilize state changes
       }
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, []);
-
-  const openNotes = notes.filter(n => n.isOpen && !n.deletedAt);
 
   // Get the top-most note's color and opacity for dock theming
   const dockTheme = useMemo(() => {
@@ -131,14 +182,14 @@ const App: React.FC = () => {
       >
         {/* Date Display floating slightly above dock items */}
         <div 
-          className={`mb-2 px-3 py-1 backdrop-blur-md rounded-full border text-xs font-mono shadow-lg ${dockTheme.isLight ? 'border-black/10 text-slate-700' : 'border-white/5 text-white/80'}`}
+          className={`mb-2 px-3 py-1 rounded-full border text-xs font-mono shadow-lg ${dockTheme.isLight ? 'border-black/10 text-slate-700' : 'border-white/5 text-white/80'}`}
           style={{ backgroundColor: dockTheme.bg }}
         >
             {displayDate}
         </div>
 
         <div 
-          className={`flex items-center gap-4 px-4 py-3 backdrop-blur-xl border rounded-2xl shadow-2xl ${dockTheme.isLight ? 'border-black/10' : 'border-white/10'}`}
+          className={`flex items-center gap-4 px-4 py-3 border rounded-2xl shadow-2xl ${dockTheme.isLight ? 'border-black/10' : 'border-white/10'}`}
           style={{ backgroundColor: dockTheme.bg }}
         >
             <button 
