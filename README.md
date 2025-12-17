@@ -74,12 +74,11 @@ npm run dev
 
 ## 🧩 Tech Stack
 
-* **Frontend:** JavaScript / TypeScript
-* **Framework:** (Electron / Tauri / Web — update if needed)
-* **Styling:** Modern CSS / SCSS
-* **Platform:** Cross-platform (Windows, macOS, Linux)
+* **Frontend:** TypeScript
+* **Framework:** Electron
+* **Styling:** Tailwind CSS
+* **Platform:** Windows
 
-> Update this section if you want to explicitly mention Electron, Tauri, React, etc.
 
 ---
 
