@@ -11,27 +11,27 @@ It provides powerful formatting, smart editing features, and intuitive note mana
 
 ### ✍️ Smart Writing Experience
 
-* Inline text formatter with keyboard shortcuts
-* Ordered lists and custom ordered lists
-* Real-time spell checking with dictionary support
-* Learns and saves corrected words for better suggestions
+- Inline text formatter with keyboard shortcuts
+- Ordered lists and custom ordered lists
+- Real-time spell checking with dictionary support
+- Learns and saves corrected words for better suggestions
 
 ### 🗂️ Note Management
 
-* Notes are **unpinned by default** for a cleaner workspace
-* Bulk note closing using checkbox selection
-* Automatic note closure when pressing the back button
+- Notes are **unpinned by default** for a cleaner workspace
+- Bulk note closing using checkbox selection
+- Automatic note closure when pressing the back button
 
 ### 🎨 UI & UX
 
-* Clean, distraction-free interface
-* Updated application icon (v2.0)
-* Improved visual rendering for embedded content
+- Clean, distraction-free interface
+- Updated application icon (v2.0)
+- Improved visual rendering for embedded content
 
 ### 🐞 Stability Improvements
 
-* Fixed YouTube video blur issue when notes overlap content
-* Improved interaction consistency across the app
+- Fixed YouTube video blur issue when notes overlap content
+- Improved interaction consistency across the app
 
 ---
 
@@ -39,9 +39,9 @@ It provides powerful formatting, smart editing features, and intuitive note mana
 
 Memora **v2.0** is a major release introducing:
 
-* Behavior changes in note pinning and navigation
-* A smarter editor with formatting shortcuts
-* Improved bulk actions and spell-checking intelligence
+- Behavior changes in note pinning and navigation
+- A smarter editor with formatting shortcuts
+- Improved bulk actions and spell-checking intelligence
 
 👉 See the full details in the **[Releases](../../releases)** section.
 
@@ -74,11 +74,10 @@ npm run dev
 
 ## 🧩 Tech Stack
 
-* **Frontend:** TypeScript
-* **Framework:** Electron
-* **Styling:** Tailwind CSS
-* **Platform:** Windows
-
+- **Frontend:** TypeScript
+- **Framework:** Electron
+- **Styling:** Tailwind CSS
+- **Platform:** Windows
 
 ---
 
@@ -86,10 +85,10 @@ npm run dev
 
 Memora is built with the following principles:
 
-* **Minimal UI, maximum utility**
-* **Keyboard-first productivity**
-* **No unnecessary friction**
-* **Fast interactions over feature overload**
+- **Minimal UI, maximum utility**
+- **Keyboard-first productivity**
+- **No unnecessary friction**
+- **Fast interactions over feature overload**
 
 ---
 
@@ -97,10 +96,30 @@ Memora is built with the following principles:
 
 Planned improvements:
 
-* Advanced search and filtering
-* Cloud sync (optional)
-* Markdown export
-* Plugin / extension support
+- Advanced search and filtering
+- Cloud sync (optional)
+- Markdown export
+- Plugin / extension support
+
+---
+
+## 🖼️ Screenshots
+
+### Editor View
+
+![Editor View](screenshots/1.png)
+
+### Floating Command Dock
+
+![Floating Command Dock](screenshots/2.png)
+
+### Keyboard Shortcuts
+
+![Keyboard Shortcuts](screenshots/3.png)
+
+### Dashboard
+
+![Dashboard](screenshots/4.png)
 
 ---
 
@@ -114,6 +133,7 @@ Contributions are welcome!
    ```bash
    git checkout -b feature/your-feature-name
    ```
+
 3. Commit your changes
 4. Open a Pull Request
 
@@ -132,8 +152,8 @@ You are free to use, modify, and distribute this software.
 
 If you find Memora useful:
 
-* ⭐ Star the repository
-* 🐞 Report issues
-* 💡 Suggest improvements
+- ⭐ Star the repository
+- 🐞 Report issues
+- 💡 Suggest improvements
 
 ---
